@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TOUNOU Growth Experiment Framework with Gemini AI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@400;600;700&display=swap');
+        
+        body { font-family: 'Pretendard', sans-serif; }
+        
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 300px;
+            max-height: 400px;
+        }
+
+        .step-active { border-color: #4F46E5; color: #4F46E5; background-color: #EEF2FF; }
+        .step-inactive { border-color: #E5E7EB; color: #6B7280; background-color: transparent; }
+
+        .custom-shadow { box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.05); }
+        
+        .loading-dots:after {
+            content: '.';
+            animation: dots 1.5s steps(5, end) infinite;
+        }
+        @keyframes dots {
+            0%, 20% { content: '.'; }
+            40% { content: '..'; }
+            60% { content: '...'; }
+            80%, 100% { content: ''; }
+        }
+
+        .checkbox-card:has(input:checked) {
+            border-color: #4F46E5;
+            background-color: #F5F3FF;
+        }
+
+        .image-drop-zone {
+            border: 2px dashed #E5E7EB;
+            transition: all 0.2s ease;
+        }
+        .image-drop-zone.drag-over {
+            border-color: #4F46E5;
+            background-color: #F5F3FF;
+        }
+        
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-900">
+
+<!-- Chosen Palette: Indigo & Slate (Professional, Strategic) -->
+<!-- Application Structure Plan: 
+1. [문제 정의]: 텍스트/이미지 분석 및 결과 저장.
+2. [가설 설계]: Action/Result 입력 및 가설 문장 생성. (직접 입력 기능 포함)
+3. [우선순위 & 검토]: 실무 체크리스트 기반 AI 등급 판정. (5개 항목 복구)
+4. [분석 & 학습]: 실험 후 데이터로부터 인사이트 추출.
+5. [최종 요약]: 모든 단계를 종합하여 리포트화하고 파일로 저장하는 기능 제공.
+-->
+<!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+
+<header class="bg-white border-b border-slate-200 sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto px-4 flex flex-col lg:flex-row items-center justify-between py-4 lg:h-20 gap-4">
+        <div class="flex items-center space-x-3 self-start lg:self-center">
+            <div class="w-10 h-10 bg-indigo-600 rounded-lg flex items-center justify-center text-white font-bold text-xl">T</div>
+            <div>
+                <h1 class="text-xl font-bold tracking-tight">Growth Framework <span class="text-indigo-600">AI</span></h1>
+                <p class="text-xs text-slate-500">PO/PD를 위한 전략적 실험 설계</p>
+            </div>
+        </div>
+        <nav id="main-nav" class="flex space-x-1 overflow-x-auto hide-scrollbar w-full lg:w-auto pb-2 lg:pb-0">
+            <button onclick="navigateTo('problem')" class="nav-btn px-4 py-2 rounded-full text-xs sm:text-sm font-semibold transition step-active whitespace-nowrap">1. 문제 정의</button>
+            <button onclick="navigateTo('hypothesis')" class="nav-btn px-4 py-2 rounded-full text-xs sm:text-sm font-semibold transition step-inactive whitespace-nowrap">2. 가설 설계</button>
+            <button onclick="navigateTo('priority')" class="nav-btn px-4 py-2 rounded-full text-xs sm:text-sm font-semibold transition step-inactive whitespace-nowrap">3. 우선순위</button>
+            <button onclick="navigateTo('analysis')" class="nav-btn px-4 py-2 rounded-full text-xs sm:text-sm font-semibold transition step-inactive whitespace-nowrap">4. 분석 & 학습</button>
+            <button onclick="navigateTo('summary')" class="nav-btn px-4 py-2 rounded-full text-xs sm:text-sm font-semibold transition step-inactive whitespace-nowrap">5. 최종 요약 ✨</button>
+        </nav>
+    </div>
+</header>
+
+<main class="max-w-5xl mx-auto px-4 py-12">
+
+    <!-- SECTION 1: PROBLEM DEFINITION -->
+    <section id="section-problem" class="space-y-8 animate-in fade-in duration-500">
+        <div class="max-w-3xl">
+            <h2 class="text-3xl font-bold text-slate-900 mb-4">비즈니스 문제를 정의하세요</h2>
+            <p class="text-lg text-slate-600 leading-relaxed">
+                현재 겪고 있는 고민과 관련 지표 자료를 함께 공유해 주세요. AI가 이미지와 텍스트를 종합 분석하여 문제의 원인을 진단합니다.
+            </p>
+        </div>
+
+        <div class="bg-white p-6 rounded-3xl border border-slate-200 custom-shadow space-y-4">
+            <div id="drop-zone" class="image-drop-zone rounded-2xl p-8 flex flex-col items-center justify-center cursor-pointer group" onclick="document.getElementById('problem-image').click()">
+                <input type="file" id="problem-image" class="hidden" accept="image/*" onchange="handleImageSelect(event)">
+                <div id="image-placeholder" class="text-center">
+                    <div class="text-4xl mb-2 group-hover:scale-110 transition-transform">📊</div>
+                    <p class="text-sm font-bold text-slate-700">지표 이미지 업로드</p>
+                    <p class="text-xs text-slate-400 mt-1">클릭하거나 파일을 드래그하여 차트 이미지를 추가하세요</p>
+                </div>
+                <div id="image-preview-container" class="hidden w-full relative">
+                    <img id="image-preview" src="" class="max-h-64 mx-auto rounded-lg shadow-sm">
+                    <button onclick="removeImage(event)" class="absolute top-2 right-2 bg-slate-900/50 text-white w-8 h-8 rounded-full flex items-center justify-center hover:bg-slate-900 transition">✕</button>
+                </div>
+            </div>
+            <textarea id="problem-input" rows="4" class="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none transition" placeholder="데이터 지표에서 발견한 특이점이나 구체적인 고민을 적어주세요."></textarea>
+            <div class="flex justify-end">
+                <button onclick="analyzeProblemWithAI()" class="px-6 py-3 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 transition flex items-center shadow-lg shadow-indigo-200">
+                    AI 문제 분석 ✨
+                </button>
+            </div>
+        </div>
+
+        <div id="problem-ai-result" class="hidden bg-indigo-50 p-8 rounded-3xl border border-indigo-100 animate-in slide-in-from-top-4">
+            <div class="flex items-center mb-4">
+                <span class="text-2xl mr-3">✨</span>
+                <h3 class="text-xl font-bold text-indigo-900">AI 멀티모달 분석 결과</h3>
+            </div>
+            <div id="problem-ai-content" class="text-slate-700 leading-relaxed space-y-4"></div>
+        </div>
+    </section>
+
+    <!-- SECTION 2: HYPOTHESIS DESIGN -->
+    <section id="section-hypothesis" class="hidden space-y-8 animate-in slide-in-from-bottom-4 duration-500">
+        <div class="max-w-3xl flex justify-between items-end">
+            <div>
+                <h2 class="text-3xl font-bold text-slate-900 mb-4">논리적인 가설 설계</h2>
+                <p class="text-lg text-slate-600 leading-relaxed">요소를 선택하거나, 직접 입력하여 당신의 아이디어를 구체화하세요.</p>
+            </div>
+            <button onclick="generateHypothesisWithAI()" class="px-5 py-2.5 bg-indigo-50 text-indigo-700 border border-indigo-200 rounded-xl font-bold hover:bg-indigo-100 transition flex items-center">
+                가설 자동 생성 ✨
+            </button>
+        </div>
+
+        <div class="bg-white rounded-3xl p-8 border border-slate-200 custom-shadow">
+            <div class="space-y-12">
+                <div>
+                    <span class="inline-block px-3 py-1 bg-indigo-100 text-indigo-700 rounded-full text-xs font-bold mb-4 uppercase font-mono">STEP 01. Action</span>
+                    <div id="action-chips" class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
+                        <button onclick="updateHypothesis('action', '결제 버튼의 크기를 키우고 강조 색상을 적용한다면', this)" class="p-4 border-2 border-slate-100 rounded-2xl text-left hover:border-indigo-200 transition bg-slate-50 action-chip">버튼 강조</button>
+                        <button onclick="updateHypothesis('action', '상세페이지 상단에 실제 구매자 리뷰 요약을 노출한다면', this)" class="p-4 border-2 border-slate-100 rounded-2xl text-left hover:border-indigo-200 transition bg-slate-50 action-chip">리뷰 요약 노출</button>
+                        <button onclick="updateHypothesis('action', '장바구니 담기 후 미구매 시 리마인드 알림을 보낸다면', this)" class="p-4 border-2 border-slate-100 rounded-2xl text-left hover:border-indigo-200 transition bg-slate-50 action-chip">리마인드 알림</button>
+                    </div>
+                    <input type="text" id="manual-action" oninput="manualUpdate('action', this.value)" class="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none transition" placeholder="또는 직접 입력하세요.">
+                </div>
+
+                <div>
+                    <span class="inline-block px-3 py-1 bg-emerald-100 text-emerald-700 rounded-full text-xs font-bold mb-4 uppercase font-mono">STEP 02. Result</span>
+                    <div id="result-chips" class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
+                        <button onclick="updateHypothesis('result', '구매 전환율(CVR)이 15% 이상 개선될 것', this)" class="p-4 border-2 border-slate-100 rounded-2xl text-left hover:border-emerald-200 transition bg-slate-50 result-chip">전환율 15% 상승</button>
+                        <button onclick="updateHypothesis('result', '장바구니 이탈률이 10% 감소할 것', this)" class="p-4 border-2 border-slate-100 rounded-2xl text-left hover:border-emerald-200 transition bg-slate-50 result-chip">이탈률 10% 감소</button>
+                        <button onclick="updateHypothesis('result', '페이지 체류 시간이 20% 증가할 것', this)" class="p-4 border-2 border-slate-100 rounded-2xl text-left hover:border-emerald-200 transition bg-slate-50 result-chip">체류 시간 증가</button>
+                    </div>
+                    <input type="text" id="manual-result" oninput="manualUpdate('result', this.value)" class="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-emerald-500 outline-none transition" placeholder="또는 직접 입력하세요.">
+                </div>
+            </div>
+
+            <div class="mt-12 p-8 bg-indigo-600 rounded-2xl text-white shadow-lg relative overflow-hidden">
+                <div class="relative z-10 text-center py-4">
+                    <h4 class="text-sm font-bold opacity-80 mb-4 uppercase tracking-widest">실시간 가설 미리보기</h4>
+                    <div class="text-2xl font-bold leading-snug">
+                        만약 <span id="h-action" class="underline decoration-indigo-300 underline-offset-8">_____</span> 하면, 
+                        <span id="h-result" class="underline decoration-emerald-300 underline-offset-8">_____</span> 일 것이다.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- SECTION 3: PRIORITY & CHECKLIST -->
+    <section id="section-priority" class="hidden space-y-8 animate-in slide-in-from-bottom-4 duration-500">
+        <div class="max-w-3xl">
+            <h2 class="text-3xl font-bold text-slate-900 mb-4">우선순위 & 전략적 검토</h2>
+            <p class="text-lg text-slate-600 leading-relaxed">PO/PD를 위한 실무 체크리스트입니다. 가중치에 따라 AI가 중요도를 판정합니다.</p>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <div class="space-y-4">
+                <div class="grid grid-cols-1 gap-3">
+                    <!-- 항목 1 -->
+                    <label class="checkbox-card p-4 border-2 border-slate-200 rounded-2xl cursor-pointer hover:border-indigo-300 transition block">
+                        <div class="flex items-start">
+                            <input type="checkbox" class="priority-check mt-1 w-5 h-5 rounded border-slate-300 text-indigo-600" value="문제의 명확성">
+                            <div class="ml-4"><span class="font-bold text-slate-800 block">문제의 명확성</span><span class="text-xs text-slate-500">데이터나 피드백으로 증명된 확실한 문제인가요?</span></div>
+                        </div>
+                    </label>
+                    <!-- 항목 2 -->
+                    <label class="checkbox-card p-4 border-2 border-slate-200 rounded-2xl cursor-pointer hover:border-indigo-300 transition block">
+                        <div class="flex items-start">
+                            <input type="checkbox" class="priority-check mt-1 w-5 h-5 rounded border-slate-300 text-indigo-600" value="사용자 가치">
+                            <div class="ml-4"><span class="font-bold text-slate-800 block">사용자 가치 개선</span><span class="text-xs text-slate-500">유저의 페인 포인트를 직접 해결하거나 효용을 주나요?</span></div>
+                        </div>
+                    </label>
+                    <!-- 항목 3 -->
+                    <label class="checkbox-card p-4 border-2 border-slate-200 rounded-2xl cursor-pointer hover:border-indigo-300 transition block">
+                        <div class="flex items-start">
+                            <input type="checkbox" class="priority-check mt-1 w-5 h-5 rounded border-slate-300 text-indigo-600" value="전략적 정렬">
+                            <div class="ml-4"><span class="font-bold text-slate-800 block">전략적 정렬 (OKR)</span><span class="text-xs text-slate-500">현재 팀의 핵심 목표 및 비즈니스 우선순위와 일치하나요?</span></div>
+                        </div>
+                    </label>
+                    <!-- 항목 4 (복구) -->
+                    <label class="checkbox-card p-4 border-2 border-slate-200 rounded-2xl cursor-pointer hover:border-indigo-300 transition block">
+                        <div class="flex items-start">
+                            <input type="checkbox" class="priority-check mt-1 w-5 h-5 rounded border-slate-300 text-indigo-600" value="측정 가능성">
+                            <div class="ml-4"><span class="font-bold text-slate-800 block">측정 가능성</span><span class="text-xs text-slate-500">실험 결과를 명확한 데이터로 검증할 수 있는 환경인가요?</span></div>
+                        </div>
+                    </label>
+                    <!-- 항목 5 (복구) -->
+                    <label class="checkbox-card p-4 border-2 border-slate-200 rounded-2xl cursor-pointer hover:border-indigo-300 transition block">
+                        <div class="flex items-start">
+                            <input type="checkbox" class="priority-check mt-1 w-5 h-5 rounded border-slate-300 text-indigo-600" value="디자인 일관성">
+                            <div class="ml-4"><span class="font-bold text-slate-800 block">디자인 시스템 준수</span><span class="text-xs text-slate-500">기존 UI 패턴 및 브랜드 아이덴티티를 해치지 않나요?</span></div>
+                        </div>
+                    </label>
+
+                    <div class="p-4 bg-slate-100 rounded-2xl border border-slate-200">
+                        <span class="text-sm font-bold text-slate-700 block mb-2">예상 투입 리소스</span>
+                        <select id="resource-select" class="w-full p-2 rounded-lg border border-slate-300 bg-white text-sm outline-none">
+                            <option value="low">낮음 (간단한 수정)</option>
+                            <option value="mid" selected>보통 (기능 개발)</option>
+                            <option value="high">높음 (시스템 설계)</option>
+                        </select>
+                    </div>
+                </div>
+                <button onclick="evaluatePriorityWithAI()" class="w-full mt-4 py-4 bg-indigo-600 text-white rounded-2xl font-bold hover:bg-indigo-700 transition shadow-lg">분석 시작 ✨</button>
+            </div>
+
+            <div id="priority-result-panel" class="bg-white rounded-3xl border border-slate-200 custom-shadow p-8 min-h-[400px]">
+                <div id="priority-placeholder" class="h-full flex flex-col items-center justify-center text-center">
+                    <div class="text-5xl mb-4">📊</div>
+                    <p class="text-slate-400 italic">체크리스트를 작성하고 분석을 시작하세요.</p>
+                </div>
+                <div id="priority-ai-content" class="hidden space-y-6">
+                    <div class="flex justify-between items-center border-b pb-4">
+                        <h4 class="font-bold text-slate-900">AI 검토 리포트</h4>
+                        <div id="priority-badge" class="px-3 py-1 bg-indigo-600 text-white rounded-full font-black text-xs">P0</div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4 text-center">
+                        <div class="p-4 bg-indigo-50 rounded-2xl border border-indigo-100"><span class="block text-xs font-bold text-indigo-600">중요도</span><span id="ai-importance" class="text-lg font-black">-</span></div>
+                        <div class="p-4 bg-emerald-50 rounded-2xl border border-emerald-100"><span class="block text-xs font-bold text-emerald-600">성공 확률</span><span id="ai-confidence" class="text-lg font-black">-</span></div>
+                    </div>
+                    <div><span class="block text-sm font-bold text-slate-800 mb-2">🧐 분석 결과</span><div id="ai-analysis-text" class="text-slate-600 text-sm leading-relaxed"></div></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- SECTION 4: ANALYSIS & LEARNING -->
+    <section id="section-analysis" class="hidden space-y-8 animate-in slide-in-from-bottom-4 duration-500">
+        <div class="max-w-3xl">
+            <h2 class="text-3xl font-bold text-slate-900 mb-4">분석 & 학습</h2>
+            <p class="text-lg text-slate-600 leading-relaxed">실험 데이터를 입력하면 AI가 핵심 교훈과 다음 전략을 도출합니다.</p>
+        </div>
+
+        <div class="bg-white rounded-3xl border border-slate-200 overflow-hidden custom-shadow">
+            <div class="p-8 space-y-4">
+                <textarea id="result-raw-input" rows="4" class="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="실험 데이터나 관찰된 사용자 행동을 입력하세요."></textarea>
+                <div class="flex justify-end"><button onclick="synthesizeLearningWithAI()" class="px-6 py-3 bg-emerald-600 text-white rounded-xl font-bold hover:bg-emerald-700 transition">인사이트 추출 ✨</button></div>
+            </div>
+            <div id="learning-ai-result" class="hidden p-8 border-t bg-emerald-50">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="bg-white p-6 rounded-2xl"><span class="block text-xs font-bold text-emerald-600 mb-2">CORE LEARNING</span><div id="ai-insight" class="text-sm text-slate-700"></div></div>
+                    <div class="bg-white p-6 rounded-2xl"><span class="block text-xs font-bold text-amber-600 mb-2">NEXT STRATEGY</span><div id="ai-next-step" class="text-sm text-slate-700"></div></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- SECTION 5: FINAL SUMMARY -->
+    <section id="section-summary" class="hidden space-y-8 animate-in fade-in duration-500">
+        <div class="max-w-3xl flex flex-col md:flex-row md:justify-between md:items-end gap-4">
+            <div>
+                <h2 class="text-3xl font-bold text-slate-900 mb-4">최종 가설 검증 리포트</h2>
+                <p class="text-lg text-slate-600 leading-relaxed">입력된 모든 단계를 종합한 보고서입니다. 내용을 검토하고 로컬 파일로 저장하세요.</p>
+            </div>
+            <button onclick="downloadSummary()" class="px-6 py-3 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 transition flex items-center shadow-lg self-start">
+                파일로 저장 (.md) 💾
+            </button>
+        </div>
+
+        <div id="summary-content" class="bg-white rounded-3xl border border-slate-200 custom-shadow p-8 md:p-12 space-y-12">
+            <!-- Summary will be generated here -->
+            <div class="text-center py-20">
+                <p class="text-slate-400">이전 단계들을 완료하면 이곳에 요약 리포트가 생성됩니다.</p>
+            </div>
+        </div>
+    </section>
+
+</main>
+
+<!-- AI Loading Modal -->
+<div id="ai-loading" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[100] flex items-center justify-center">
+    <div class="bg-white p-8 rounded-3xl shadow-2xl text-center max-w-xs w-full">
+        <div class="mb-4 flex justify-center"><div class="w-12 h-12 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div></div>
+        <p class="text-indigo-900 font-bold mb-1">분석 중입니다</p>
+        <p class="text-slate-500 text-sm loading-dots">데이터를 정리하고 있어요</p>
+    </div>
+</div>
+
+<script>
+    const apiKey = ""; 
+
+    // Global App State to store AI responses
+    const appState = {
+        problemAnalysis: null,
+        hypothesis: { action: "", result: "" },
+        priorityReview: null,
+        learningInsight: null,
+        problemText: "",
+        learningRaw: ""
+    };
+
+    async function callGemini(prompt, systemInstruction = "", imageBase64 = null) {
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+        const parts = [{ text: prompt }];
+        if (imageBase64) parts.push({ inlineData: { mimeType: "image/png", data: imageBase64 } });
+        const payload = {
+            contents: [{ parts: parts }],
+            systemInstruction: { parts: [{ text: systemInstruction }] },
+            generationConfig: { responseMimeType: "application/json" }
+        };
+
+        const maxRetries = 5;
+        let delay = 1000;
+        for (let i = 0; i < maxRetries; i++) {
+            try {
+                const response = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                const data = await response.json();
+                return JSON.parse(data.candidates?.[0]?.content?.parts?.[0]?.text || "{}");
+            } catch (error) {
+                if (i === maxRetries - 1) throw error;
+                await new Promise(resolve => setTimeout(resolve, delay));
+                delay *= 2;
+            }
+        }
+    }
+
+    function navigateTo(sectionId) {
+        ['problem', 'hypothesis', 'priority', 'analysis', 'summary'].forEach(id => {
+            document.getElementById(`section-${id}`).classList.add('hidden');
+        });
+        document.getElementById(`section-${sectionId}`).classList.remove('hidden');
+        const buttons = document.querySelectorAll('.nav-btn');
+        const sections = ['problem', 'hypothesis', 'priority', 'analysis', 'summary'];
+        buttons.forEach((btn, index) => {
+            btn.className = sections[index] === sectionId ? 'nav-btn px-4 py-2 rounded-full text-xs sm:text-sm font-semibold transition step-active whitespace-nowrap' : 'nav-btn px-4 py-2 rounded-full text-xs sm:text-sm font-semibold transition step-inactive whitespace-nowrap';
+        });
+
+        if (sectionId === 'summary') renderSummary();
+        
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function showLoading(show) { document.getElementById('ai-loading').classList.toggle('hidden', !show); }
+
+    // Image Handling
+    let selectedImageBase64 = null;
+    function handleImageSelect(event) {
+        const file = event.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                selectedImageBase64 = e.target.result.split(',')[1];
+                document.getElementById('image-preview').src = e.target.result;
+                document.getElementById('image-placeholder').classList.add('hidden');
+                document.getElementById('image-preview-container').classList.remove('hidden');
+            };
+            reader.readAsDataURL(file);
+        }
+    }
+    function removeImage(event) {
+        event.stopPropagation();
+        selectedImageBase64 = null;
+        document.getElementById('problem-image').value = '';
+        document.getElementById('image-placeholder').classList.remove('hidden');
+        document.getElementById('image-preview-container').classList.add('hidden');
+    }
+
+    // Step 1: AI Analyze
+    async function analyzeProblemWithAI() {
+        const textInput = document.getElementById('problem-input').value;
+        appState.problemText = textInput;
+        showLoading(true);
+        try {
+            const systemPrompt = "시니어 이커머스 전문가로서 문제 진단, 추천 실험, KPI를 JSON으로 주세요. {problemAnalysis, recommendedExperiment, kpi}";
+            const result = await callGemini(textInput || "이미지 분석", systemPrompt, selectedImageBase64);
+            appState.problemAnalysis = result;
+            document.getElementById('problem-ai-content').innerHTML = `
+                <div class='bg-white/50 p-4 rounded-xl mb-3'><p class='font-bold text-indigo-900'>🧐 진단</p><p class='text-sm'>${result.problemAnalysis}</p></div>
+                <div class='bg-white/50 p-4 rounded-xl mb-3'><p class='font-bold text-indigo-900'>🚀 실험</p><p class='text-sm'>${result.recommendedExperiment}</p></div>
+                <div class='bg-white/50 p-4 rounded-xl'><p class='font-bold text-indigo-900'>📊 KPI</p><p class='text-sm'>${result.kpi}</p></div>
+            `;
+            document.getElementById('problem-ai-result').classList.remove('hidden');
+        } finally { showLoading(false); }
+    }
+
+    // Step 2: Hypothesis
+    function updateHypothesis(type, value, element) {
+        appState.hypothesis[type] = value;
+        document.getElementById(`h-${type}`).innerText = value || "_____";
+        document.getElementById(`manual-${type}`).value = value;
+        if (element) {
+            document.querySelectorAll(`.${type}-chip`).forEach(c => c.classList.remove('border-indigo-600', 'bg-indigo-50', 'border-emerald-600', 'bg-emerald-50'));
+            const active = type === 'action' ? 'border-indigo-600 bg-indigo-50' : 'border-emerald-600 bg-emerald-50';
+            element.classList.add(...active.split(' '));
+        }
+    }
+    function manualUpdate(type, value) {
+        appState.hypothesis[type] = value;
+        document.getElementById(`h-${type}`).innerText = value || "_____";
+    }
+    async function generateHypothesisWithAI() {
+        showLoading(true);
+        try {
+            const res = await callGemini(`Problem: ${appState.problemText}`, "Action과 Result를 JSON으로 생성. {action, result}");
+            updateHypothesis('action', res.action, null);
+            updateHypothesis('result', res.result, null);
+        } finally { showLoading(false); }
+    }
+
+    // Step 3: Priority
+    async function evaluatePriorityWithAI() {
+        const checks = Array.from(document.querySelectorAll('.priority-check:checked')).map(c => c.value);
+        const resource = document.getElementById('resource-select').value;
+        showLoading(true);
+        try {
+            const prompt = `Hypothesis: Action(${appState.hypothesis.action}), Result(${appState.hypothesis.result})\nChecklist: ${checks.join(', ')}\nResource: ${resource}`;
+            const res = await callGemini(prompt, "시니어 PO 관점 분석 JSON: { priorityLevel, importanceScore, confidenceLevel, analysis, guidelines:[] }");
+            appState.priorityReview = res;
+            document.getElementById('priority-placeholder').classList.add('hidden');
+            document.getElementById('priority-ai-content').classList.remove('hidden');
+            document.getElementById('priority-badge').innerText = res.priorityLevel;
+            document.getElementById('ai-importance').innerText = res.importanceScore;
+            document.getElementById('ai-confidence').innerText = res.confidenceLevel;
+            document.getElementById('ai-analysis-text').innerText = res.analysis;
+        } finally { showLoading(false); }
+    }
+
+    // Step 4: Analysis
+    async function synthesizeLearningWithAI() {
+        const data = document.getElementById('result-raw-input').value;
+        appState.learningRaw = data;
+        showLoading(true);
+        try {
+            const res = await callGemini(data, "실험 데이터 분석 JSON: { learning, nextStep }");
+            appState.learningInsight = res;
+            document.getElementById('ai-insight').innerText = res.learning;
+            document.getElementById('ai-next-step').innerText = res.nextStep;
+            document.getElementById('learning-ai-result').classList.remove('hidden');
+        } finally { showLoading(false); }
+    }
+
+    // Step 5: Summary Rendering
+    function renderSummary() {
+        const container = document.getElementById('summary-content');
+        if (!appState.problemAnalysis && !appState.hypothesis.action) {
+            container.innerHTML = `<div class="text-center py-20"><p class="text-slate-400">작성된 내용이 없습니다. 이전 단계에서 분석을 진행해 주세요.</p></div>`;
+            return;
+        }
+
+        container.innerHTML = `
+            <div class="space-y-10">
+                <section>
+                    <h3 class="text-xl font-bold text-slate-900 border-l-4 border-indigo-600 pl-4 mb-6">1. 문제 진단 리포트</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 bg-slate-50 p-6 rounded-2xl">
+                        <div>
+                            <span class="text-xs font-bold text-slate-400 uppercase">Input Context</span>
+                            <p class="text-sm text-slate-700 mt-1">${appState.problemText || "데이터 없음"}</p>
+                        </div>
+                        <div class="space-y-4">
+                            <div><span class="text-xs font-bold text-indigo-600 uppercase">AI Diagnosis</span><p class="text-sm mt-1">${appState.problemAnalysis?.problemAnalysis || "-"}</p></div>
+                            <div><span class="text-xs font-bold text-indigo-600 uppercase">Core KPI</span><p class="text-sm mt-1">${appState.problemAnalysis?.kpi || "-"}</p></div>
+                        </div>
+                    </div>
+                </section>
+
+                <section>
+                    <h3 class="text-xl font-bold text-slate-900 border-l-4 border-emerald-500 pl-4 mb-6">2. 설계 가설</h3>
+                    <div class="bg-indigo-600 text-white p-8 rounded-2xl shadow-inner text-center">
+                        <p class="text-lg font-medium leading-relaxed">
+                            만약 <span class="underline decoration-indigo-300 underline-offset-4">${appState.hypothesis.action || "____"}</span> 하면, <br class="hidden sm:block">
+                            <span class="underline decoration-emerald-300 underline-offset-4">${appState.hypothesis.result || "____"}</span> 일 것이다.
+                        </p>
+                    </div>
+                </section>
+
+                <section>
+                    <h3 class="text-xl font-bold text-slate-900 border-l-4 border-amber-500 pl-4 mb-6">3. 전략적 우선순위</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div class="p-6 bg-slate-50 rounded-2xl text-center">
+                            <span class="text-xs font-bold text-slate-400 block mb-1">PRIORITY</span>
+                            <span class="text-3xl font-black text-indigo-600">${appState.priorityReview?.priorityLevel || "N/A"}</span>
+                        </div>
+                        <div class="md:col-span-2 p-6 bg-slate-50 rounded-2xl">
+                            <span class="text-xs font-bold text-slate-400 block mb-2">STRATEGIC ANALYSIS</span>
+                            <p class="text-sm text-slate-700">${appState.priorityReview?.analysis || "검토 데이터가 없습니다."}</p>
+                        </div>
+                    </div>
+                </section>
+
+                <section>
+                    <h3 class="text-xl font-bold text-slate-900 border-l-4 border-rose-500 pl-4 mb-6">4. 학습 인사이트 & 향후 과제</h3>
+                    <div class="space-y-4">
+                        <div class="p-6 border border-slate-100 rounded-2xl bg-white shadow-sm">
+                            <span class="text-xs font-bold text-emerald-600 block mb-2 uppercase">Core Learning</span>
+                            <p class="text-sm text-slate-700">${appState.learningInsight?.learning || "기록된 인사이트가 없습니다."}</p>
+                        </div>
+                        <div class="p-6 border border-slate-100 rounded-2xl bg-white shadow-sm">
+                            <span class="text-xs font-bold text-amber-600 block mb-2 uppercase">Next Step</span>
+                            <p class="text-sm text-slate-700">${appState.learningInsight?.nextStep || "대기 중인 다음 과제가 없습니다."}</p>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        `;
+    }
+
+    // Save as File Logic
+    function downloadSummary() {
+        if (!appState.hypothesis.action) {
+            alert("저장할 내용이 부족합니다. 가설 수립 및 분석을 진행해 주세요.");
+            return;
+        }
+
+        const date = new Date().toISOString().split('T')[0];
+        const content = `
+# 이커머스 가설 검증 리포트 (${date})
+
+## 1. 문제 정의 및 진단
+- **입력 상황**: ${appState.problemText || "데이터 없음"}
+- **AI 분석 원인**: ${appState.problemAnalysis?.problemAnalysis || "분석 전"}
+- **집중 지표(KPI)**: ${appState.problemAnalysis?.kpi || "-"}
+
+## 2. 설계 가설
+> 만약 ${appState.hypothesis.action} 하면, ${appState.hypothesis.result} 일 것이다.
+
+## 3. 우선순위 검토
+- **우선순위 등급**: ${appState.priorityReview?.priorityLevel || "미정"}
+- **중요도**: ${appState.priorityReview?.importanceScore || "-"}
+- **AI 전략 제언**: ${appState.priorityReview?.analysis || "없음"}
+
+## 4. 실험 결과 및 학습
+- **원시 데이터**: ${appState.learningRaw || "데이터 없음"}
+- **핵심 학습**: ${appState.learningInsight?.learning || "분석 전"}
+- **다음 전략**: ${appState.learningInsight?.nextStep || "-"}
+
+---
+*Generated by TOUNOU Growth Experiment Framework AI*
+        `.trim();
+
+        const blob = new Blob([content], { type: 'text/markdown' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `Growth_Experiment_Report_${date}.md`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    }
+
+    window.onload = () => navigateTo('problem');
+</script>
+</body>
+</html>
